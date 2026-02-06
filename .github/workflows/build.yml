@@ -9,26 +9,25 @@ jobs:
       - name: Setup Tools
         run: sudo apt-get update && sudo apt-get install -y wget zip git
 
-      - name: Download Ready Kernel & KSU Source
+      - name: Download Kernel & KSU
         run: |
-          # تحميل ملف الكرنل الجاهز (19.9MB) مباشرة
-          wget https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta-1413_a50_20250729_064506/MintBeta-1413.A11.AOSP-Enforcing-KSU_A50.CI.zip -O mint_ready.zip
+          # الرابط المباشر الصحيح لملف الكرنل (19.9MB)
+          wget "https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta-1413_a50_20250729_064506/MintBeta-1413.A11.AOSP-Enforcing-KSU_A50.CI.zip" -O kernel.zip
           # تحميل سورس KSU 3.1.0
-          wget https://github.com/tiann/KernelSU/archive/refs/tags/v3.1.0.zip -O ksu_source.zip
+          wget "https://github.com/tiann/KernelSU/archive/refs/tags/v3.1.0.zip" -O ksu.zip
 
-      - name: Inject Patch and WebUI
+      - name: Inject Patch
         run: |
-          unzip mint_ready.zip -d final_work
-          cd final_work
-          # تفعيل الأوامر التي تحول الحالة إلى Working وتفتح WebUI
+          unzip kernel.zip -d work_dir
+          cd work_dir
+          # تعديل الملفات لتفعيل Working و WebUI
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
           echo "patch_overlayfs=1" >> anykernel.sh
-          echo "ksu_webui=1" >> anykernel.sh
-          # إعادة ضغط كل الملفات بما فيها الكرنل الأصلي
-          zip -r9 ../A50-FINAL-KSU-3.1.0.zip *
+          echo "ksu_webui=true" >> anykernel.sh
+          zip -r9 ../A50-KSU-3.1.0-FIXED.zip *
 
-      - name: Upload Final ZIP
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: A50-KSU-3.1.0-Fixed-Final
-          path: A50-FINAL-KSU-3.1.0.zip
+          name: A50-KSU-3.1.0-READY
+          path: A50-KSU-3.1.0-FIXED.zip
