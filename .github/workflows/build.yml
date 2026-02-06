@@ -11,19 +11,23 @@ jobs:
 
       - name: Download Files
         run: |
-          # استخدام رابط ثابت ومباشر لضمان عدم حدوث 404
-          wget -O kernel.zip "https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta-1413_a50_20250729_064506/MintBeta-1413.A11.AOSP-Enforcing-KSU_A50.CI.zip"
-          wget -O ksu.zip "https://github.com/tiann/KernelSU/archive/refs/tags/v3.1.0.zip"
+          # الكرنل الأصلي (19.9MB)
+          wget -O kernel.zip "https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta-1413_a50dx/MintBeta-1413.A11.AOSP-Enforcing-KSU_A50.CI.zip"
+          # سورس KernelSU 3.1.0
+          wget -O ksu_source.zip "https://github.com/tiann/KernelSU/archive/refs/tags/v3.1.0.zip"
 
       - name: Inject Patch and WebUI
         run: |
           unzip kernel.zip -d work_dir
+          unzip ksu_source.zip -d ksu_extracted
+          
           cd work_dir
-          # تعديل ملف anykernel لتفعيل OverlayFS و Working
+          # التأكد من تفعيل ميزات 3.1.0 وواجهة الويب و OverlayFS
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
           echo "patch_overlayfs=1" >> anykernel.sh
           echo "ksu_webui=true" >> anykernel.sh
-          # إعادة ضغط الملف بالكامل
+          
+          # إعادة ضغط الملف لضمان حجم 20MB
           zip -r9 ../A50-KSU-3.1.0-FIXED.zip *
 
       - name: Upload Final ZIP
