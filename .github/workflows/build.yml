@@ -1,54 +1,66 @@
-name: Build A50 Kernel ZIP with KSU 3.1.0 & OverlayFS
+name: Build A50 Kernel (Final Fix)
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - name: Setup Environment
+      - name: Maximize Build Space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+
+      - name: Setup Build Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip
-          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi clang lld llvm
+          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip clang lld llvm gcc-aarch64-linux-gnu
 
-      - name: Download Mint Kernel Source
+      - name: Download Kernel & Toolchain
         run: |
-          wget https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/archive/refs/tags/xbeta-1413_a50dx.tar.gz
-          tar -xf xbeta-1413_a50dx.tar.gz
-          mv android_kernel_samsung_exynos9610_mint-xbeta-1413_a50dx kernel-source
+          # تحميل السورس
+          git clone --depth=1 https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint.git -b xbeta kernel-source
+          
+          # تحميل المترجم الاحترافي
+          git clone --depth=1 https://gitlab.com/re-index/proton-clang.git clang
 
-      - name: Integrate Latest KernelSU (3.1.0)
+      - name: Integrate KernelSU 3.1.0
         run: |
           cd kernel-source
           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
 
-      - name: Force Enable Kernel Features (OverlayFS & KSU)
-        run: |
-          cd kernel-source
-          # تفعيل الخيارات اللازمة لتعمل إضافات تخطي حماية تويتر
-          echo "CONFIG_OVERLAY_FS=y" >> arch/arm64/configs/a50_defconfig
-          echo "CONFIG_KSU=y" >> arch/arm64/configs/a50_defconfig
-
-      - name: Build Kernel Image
+      - name: Build Kernel
         run: |
           cd kernel-source
           export ARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-          make a50_defconfig
-          make -j$(nproc) CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          export KBUILD_BUILD_USER="yesine13"
+          export KBUILD_BUILD_HOST="Github-Actions"
+          export PATH=$GITHUB_WORKSPACE/clang/bin:$PATH
+          
+          make O=out a50_defconfig
+          make -j$(nproc --all) O=out \
+                      ARCH=arm64 \
+                      CC=clang \
+                      CROSS_COMPILE=aarch64-linux-gnu- \
+                      CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+                      LD=ld.lld \
+                      AR=llvm-ar \
+                      NM=llvm-nm \
+                      OBJCOPY=llvm-objcopy \
+                      OBJDUMP=llvm-objdump \
+                      STRIP=llvm-strip
 
-      - name: Create Flashable ZIP (AnyKernel3)
+      - name: Package ZIP
         run: |
           git clone https://github.com/osm0sis/AnyKernel3.git
-          # نسخ ملف الكرنل المبني إلى مجلد الضغط
-          cp kernel-source/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+          cp kernel-source/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
           cd AnyKernel3
-          zip -r9 ../A50-Mint-KSU-3.1.0-Final.zip * -x .git* README.md
+          zip -r9 ../A50-KSU-Final.zip *
 
-      - name: Upload Flashable ZIP
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: Flashable-Kernel-Final
-          path: A50-Mint-KSU-3.1.0-Final.zip
+          name: Kernel-A50-Fixed
+          path: A50-KSU-Final.zip
