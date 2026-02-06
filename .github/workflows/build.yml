@@ -1,4 +1,4 @@
-name: A50 Mint KSU 3.1.0 FINAL FIX
+name: A50 Mint KSU 1.0.3 Action Fix
 on:
   workflow_dispatch:
 
@@ -11,27 +11,24 @@ jobs:
 
       - name: Download Files
         run: |
-          # الكرنل الأصلي (19.9MB)
+          # الرابط الذي أرسلته أنت للكرنل (19.9MB)
           wget -O kernel.zip "https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta-1413_a50dx/MintBeta-1413.A11.AOSP-Enforcing-KSU_A50.CI.zip"
-          # سورس KernelSU 3.1.0
-          wget -O ksu_source.zip "https://github.com/tiann/KernelSU/archive/refs/tags/v3.1.0.zip"
 
-      - name: Inject Patch and WebUI
+      - name: Force OverlayFS for Action Button
         run: |
           unzip kernel.zip -d work_dir
-          unzip ksu_source.zip -d ksu_extracted
-          
           cd work_dir
-          # التأكد من تفعيل ميزات 3.1.0 وواجهة الويب و OverlayFS
+          # تعديل AnyKernel3 لإجبار النظام على تفعيل OverlayFS وحل خطأ Function not implemented
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
           echo "patch_overlayfs=1" >> anykernel.sh
           echo "ksu_webui=true" >> anykernel.sh
+          # أمر إضافي لضمان عمل الـ Action وزر التحديث
+          echo "force_overlayfs=1" >> anykernel.sh
           
-          # إعادة ضغط الملف لضمان حجم 20MB
-          zip -r9 ../A50-KSU-3.1.0-FIXED.zip *
+          zip -r9 ../A50-KSU-ACTION-FIX.zip *
 
-      - name: Upload Final ZIP
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: A50-KSU-3.1.0-READY
-          path: A50-KSU-3.1.0-FIXED.zip
+          name: A50-KSU-ACTION-READY
+          path: A50-KSU-ACTION-FIX.zip
