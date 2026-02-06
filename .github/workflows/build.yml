@@ -1,4 +1,4 @@
-name: Build A50 Kernel Final
+name: Build A50 Kernel Final 141
 on:
   workflow_dispatch:
 
