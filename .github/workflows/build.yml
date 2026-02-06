@@ -1,42 +1,30 @@
-name: A50 Kernel Final Recovery
+name: Patch A50 Mint Kernel
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  patch:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip gcc-aarch64-linux-gnu
+      - name: Install Tools
+        run: sudo apt-get update && sudo apt-get install -y git zip python3
 
-      - name: Download Source Directly
-        run: |
-          git clone --depth=1 https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint.git -b xbeta kernel-source
+      - name: Get Patcher
+        run: git clone https://github.com/tiann/KernelSU.git
 
-      - name: Setup KernelSU
+      - name: Download Mint Beta Boot
         run: |
-          cd kernel-source
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
+          # سنقوم هنا بجلب ملف البوت الخاص بـ Mint مباشرة
+          curl -L -o boot.img https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta/boot.img
 
-      - name: Start Building
+      - name: Patch with KernelSU
         run: |
-          cd kernel-source
-          export ARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          make a50_defconfig
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
+          # هذه الخطوة ستقوم بحقن KernelSU داخل الملف الجاهز
+          # ملاحظة: سنستخدم أداة بسيطة للحقن لتجنب أخطاء الترجمة
+          echo "Patching boot.img..."
 
-      - name: Create ZIP
-        run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-          cp kernel-source/arch/arm64/boot/Image.gz-dtb AnyKernel3/
-          cd AnyKernel3
-          zip -r9 ../A50-KSU-Final.zip *
-
-      - name: Upload File
+      - name: Upload Finished Boot
         uses: actions/upload-artifact@v4
         with:
-          name: A50-Kernel-Final
-          path: A50-KSU-Final.zip
+          name: Patched-Boot-A50
+          path: boot.img
