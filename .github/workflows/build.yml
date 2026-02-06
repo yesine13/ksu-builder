@@ -1,4 +1,4 @@
-name: Patch A50 Mint Kernel
+name: Patch A50 Mint Kernel Final
 on:
   workflow_dispatch:
 
@@ -7,24 +7,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Tools
-        run: sudo apt-get update && sudo apt-get install -y git zip python3
+        run: sudo apt-get update && sudo apt-get install -y git zip wget
 
-      - name: Get Patcher
-        run: git clone https://github.com/tiann/KernelSU.git
-
-      - name: Download Mint Beta Boot
+      - name: Download Mint Beta Image
         run: |
-          # سنقوم هنا بجلب ملف البوت الخاص بـ Mint مباشرة
-          curl -L -o boot.img https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/releases/download/xbeta/boot.img
+          # سنحاول تحميل ملف الكرنل مباشرة من السورس الموثوق
+          wget https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/raw/xbeta/arch/arm64/boot/Image.gz-dtb -O Image.gz-dtb
 
-      - name: Patch with KernelSU
+      - name: Prepare Flashable ZIP
         run: |
-          # هذه الخطوة ستقوم بحقن KernelSU داخل الملف الجاهز
-          # ملاحظة: سنستخدم أداة بسيطة للحقن لتجنب أخطاء الترجمة
-          echo "Patching boot.img..."
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+          mv Image.gz-dtb AnyKernel3/
+          cd AnyKernel3
+          # تعديل ملف الإعدادات ليتناسب مع A50
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+          zip -r9 ../A50-Mint-KSU-Ready.zip *
 
-      - name: Upload Finished Boot
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: Patched-Boot-A50
-          path: boot.img
+          name: A50-Mint-Kernel-ZIP
+          path: A50-Mint-KSU-Ready.zip
