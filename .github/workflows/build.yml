@@ -1,4 +1,4 @@
-name: Build A50 Kernel Final 141
+name: A50 Kernel Final Recovery
 on:
   workflow_dispatch:
 
@@ -6,12 +6,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Tools
+      - name: Setup Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip gcc-aarch64-linux-gnu clang lld
+          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip gcc-aarch64-linux-gnu
 
-      - name: Get Kernel Source
+      - name: Download Source Directly
         run: |
           git clone --depth=1 https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint.git -b xbeta kernel-source
 
@@ -20,23 +20,23 @@ jobs:
           cd kernel-source
           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
 
-      - name: Build
+      - name: Start Building
         run: |
           cd kernel-source
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           make a50_defconfig
-          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu-
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
 
-      - name: ZIP and Upload
+      - name: Create ZIP
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
           cp kernel-source/arch/arm64/boot/Image.gz-dtb AnyKernel3/
           cd AnyKernel3
-          zip -r9 ../A50-Kernel-Final.zip *
-          
-      - name: Upload Artifact
+          zip -r9 ../A50-KSU-Final.zip *
+
+      - name: Upload File
         uses: actions/upload-artifact@v4
         with:
           name: A50-Kernel-Final
-          path: A50-Kernel-Final.zip
+          path: A50-KSU-Final.zip
