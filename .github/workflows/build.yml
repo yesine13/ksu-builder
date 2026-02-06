@@ -9,7 +9,8 @@ jobs:
       - name: Setup Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev clang lld llvm git
+          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip
+          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: Download Mint Kernel Source
         run: |
@@ -25,6 +26,7 @@ jobs:
       - name: Force Enable Kernel Features (OverlayFS & KSU)
         run: |
           cd kernel-source
+          # التأكد من تفعيل الخيارات اللازمة لتجاوز مشكلة تويتر
           echo "CONFIG_OVERLAY_FS=y" >> arch/arm64/configs/a50_defconfig
           echo "CONFIG_KSU=y" >> arch/arm64/configs/a50_defconfig
 
@@ -33,8 +35,9 @@ jobs:
           cd kernel-source
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           make a50_defconfig
-          make -j$(nproc) CROSS_COMPILE=aarch64-linux-gnu-
+          make -j$(nproc) CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Create Flashable ZIP (AnyKernel3)
         run: |
