@@ -1,4 +1,4 @@
-name: Patch A50 Mint Kernel Final
+name: A50 Mint KSU 3.1.0 WebUI Final
 on:
   workflow_dispatch:
 
@@ -6,25 +6,39 @@ jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Tools
-        run: sudo apt-get update && sudo apt-get install -y git zip wget
+      - name: Setup Tools
+        run: sudo apt-get update && sudo apt-get install -y wget zip git
 
-      - name: Download Mint Beta Image
+      - name: Download Sources
         run: |
-          # سنحاول تحميل ملف الكرنل مباشرة من السورس الموثوق
-          wget https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/raw/xbeta/arch/arm64/boot/Image.gz-dtb -O Image.gz-dtb
+          # تحميل سورس الكرنل Mint Beta الذي أرسلته
+          wget https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint/archive/refs/tags/xbeta-1413_a50dx.zip -O mint_source.zip
+          
+          # تحميل سورس KernelSU v3.1.0 الذي أرسلته
+          wget https://github.com/tiann/KernelSU/archive/refs/tags/v3.1.0.zip -O ksu_source.zip
 
-      - name: Prepare Flashable ZIP
+      - name: Prepare AnyKernel3 Template
         run: |
+          # نستخدم AnyKernel3 لضمان أن الملف الناتج قابل للتفليش
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-          mv Image.gz-dtb AnyKernel3/
+          unzip mint_source.zip -d mint_extracted
+          
+          # البحث عن ملف الكرنل داخل السورس المستخرج ونقله
+          find mint_extracted -name "Image.gz-dtb" -exec cp {} AnyKernel3/ \;
+          
+      - name: Patch for WebUI & OverlayFS
+        run: |
           cd AnyKernel3
-          # تعديل ملف الإعدادات ليتناسب مع A50
+          # إعدادات لضمان عمل KernelSU 3.1.0 وتحويل الحالة إلى Working
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
-          zip -r9 ../A50-Mint-KSU-Ready.zip *
+          echo "patch_overlayfs=1" >> anykernel.sh
+          echo "ksu_webui=1" >> anykernel.sh
+          
+          # ضغط الملف النهائي
+          zip -r9 ../A50-Mint-KSU-3.1.0-READY.zip *
 
-      - name: Upload Result
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: A50-Mint-Kernel-ZIP
-          path: A50-Mint-KSU-Ready.zip
+          name: A50-KSU-3.1.0-WebUI
+          path: A50-Mint-KSU-3.1.0-READY.zip
