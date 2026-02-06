@@ -1,4 +1,4 @@
-name: Build A50 Kernel (1121)
+name: Build A50 Kernel Final
 on:
   workflow_dispatch:
 
@@ -6,39 +6,37 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Build Environment
+      - name: Install Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi clang lld llvm
+          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev git zip gcc-aarch64-linux-gnu clang lld
 
-      - name: Download Kernel Source
+      - name: Get Kernel Source
         run: |
-          # تحميل سورس Mint الرسمي لـ A50
           git clone --depth=1 https://github.com/FreshROMs/android_kernel_samsung_exynos9610_mint.git -b xbeta kernel-source
 
-      - name: Setup KernelSU 3.1.0
+      - name: Setup KernelSU
         run: |
           cd kernel-source
           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
 
-      - name: Build Kernel Image
+      - name: Build
         run: |
           cd kernel-source
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           make a50_defconfig
-          make -j$(nproc --all) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu-
 
-      - name: Create Flashable ZIP
+      - name: ZIP and Upload
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
           cp kernel-source/arch/arm64/boot/Image.gz-dtb AnyKernel3/
           cd AnyKernel3
-          zip -r9 ../A50-KSU-Final.zip *
-
-      - name: Upload Kernel
+          zip -r9 ../A50-Kernel-Final.zip *
+          
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel-A50-KSU
-          path: A50-KSU-Final.zip
+          name: A50-Kernel-Final
+          path: A50-Kernel-Final.zip
